@@ -1,11 +1,6 @@
-import cv2 # Image reading library
-import sys, os, validators, time, requests, re
-
-from dotenv import load_dotenv
-load_dotenv()
+import validators, time, requests, re
 
 def get_analysis(id, headers):
-	status = {}
 	retries = 3
 	
 	url = "https://www.virustotal.com/api/v3/analyses/" + id
@@ -54,8 +49,7 @@ def upload_for_scanning(payload, headers):
 
 # --------------------------------------------------------
 
-def analyser(image):
-	qrcode = image
+def analyser(qrcode, apikey):
 	print("\n" + qrcode + "\n")
 
 	# Print data
@@ -63,8 +57,7 @@ def analyser(image):
 		"Accept": "application/json",
 		"Content-Type": "application/x-www-form-urlencoded"
 	}
-	headers["x-apikey"] = "681da8da48f79afcced8b6077cb3d05ff84ad3f66815084910c69505a620b783"
-	print(headers["x-apikey"])
+	headers["x-apikey"] = apikey
 
 	message = qrcode + " contains "
 	data = qrcode.strip()

@@ -785,9 +785,12 @@ fun showResult(
 	}
 
 	val py = Python.getInstance()
-	val module = py.getModule("analyser")
 
-	val bytes = module.callAttr("analyser", result.text)
+	val apiModule = py.getModule("apikey")
+	val apikey = apiModule.callAttr("apikey")
+
+	val module = py.getModule("analyser")
+	val bytes = module.callAttr("analyser", result.text, apikey)
 
 	print(bytes)
 	val scan = result.toScan()
