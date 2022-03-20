@@ -1,3 +1,8 @@
+plugins {
+	id 'com.android.application'
+	id 'com.chaquo.python'
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
@@ -5,7 +10,7 @@ android {
 	compileSdkVersion sdk_version
 
 	defaultConfig {
-		minSdkVersion 9
+		minSdkVersion 16
 		targetSdkVersion sdk_version
 
 		versionCode 93
@@ -21,6 +26,18 @@ android {
 		renderscriptSupportModeBlasEnabled true
 
 		testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+
+		ndk {
+			abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+		}
+
+		python {
+			pip {
+				// "-r"` followed by a requirements filename, relative to the
+				// project directory:
+				install "-r", "requirements.txt"
+			}
+		}
 	}
 
 	signingConfigs {
@@ -98,4 +115,5 @@ dependencies {
 	implementation 'com.google.zxing:core:3.4.1'
 	implementation 'com.github.markusfisch:CameraView:1.9.1'
 	implementation 'com.github.markusfisch:ScalingImageView:1.3.0'
+	implementation 'com.android.support:multidex:1.0.3'
 }

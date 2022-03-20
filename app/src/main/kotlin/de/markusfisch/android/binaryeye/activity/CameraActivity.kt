@@ -24,6 +24,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.widget.SeekBar
+import com.chaquo.python.Python
 import com.google.zxing.Result
 import com.google.zxing.ResultMetadataType
 import de.markusfisch.android.binaryeye.R
@@ -782,6 +783,13 @@ fun showResult(
 	if (prefs.copyImmediately) {
 		activity.copyToClipboard(result.text)
 	}
+
+	val py = Python.getInstance()
+	val module = py.getModule("analyser")
+
+	val bytes = module.callAttr("analyser", result.text)
+
+	print(bytes)
 	val scan = result.toScan()
 	if (prefs.useHistory) {
 		scan.id = db.insertScan(scan)
