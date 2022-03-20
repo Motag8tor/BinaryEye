@@ -56,7 +56,7 @@ def upload_for_scanning(payload, headers):
 
 def analyser(image):
 	qrcode = image
-	print("\n\n" + qrcode + "\n\n")
+	print("\n" + qrcode + "\n")
 
 	# Print data
 	headers = {
