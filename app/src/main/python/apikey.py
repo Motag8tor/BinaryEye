@@ -1,2 +1,0 @@
-def apikey():
-	return "681da8da48f79afcced8b6077cb3d05ff84ad3f66815084910c69505a620b783"
