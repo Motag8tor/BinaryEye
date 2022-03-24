@@ -8,16 +8,18 @@
 		android:clipToPadding="false"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
+
 		<RelativeLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content">
+
 			<EditText
 				android:id="@+id/content"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:layout_marginTop="16dp"
 				android:layout_marginStart="16dp"
 				android:layout_marginLeft="16dp"
+				android:layout_marginTop="16dp"
 				android:layout_marginEnd="16dp"
 				android:layout_marginRight="16dp"
 				android:gravity="start|top"
@@ -26,35 +28,39 @@
 				android:importantForAutofill="no"
 				android:inputType="textMultiLine"
 				android:typeface="monospace"
-				tools:ignore="UnusedAttribute"/>
+				tools:ignore="UnusedAttribute" />
+
 			<TextView
-				style="@style/SecondaryText"
 				android:id="@+id/format"
+				style="@style/SecondaryText"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_below="@+id/content"
 				android:layout_marginEnd="16dp"
 				android:layout_marginRight="16dp"
 				android:layout_marginBottom="16dp"
-				android:gravity="end|top"/>
+				android:gravity="end|top" />
+
 			<TableLayout
 				android:id="@+id/data"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_below="@+id/format"
-				android:layout_marginEnd="16dp"
 				android:layout_marginStart="16dp"
 				android:layout_marginLeft="16dp"
-				android:layout_marginRight="16dp"/>
+				android:layout_marginEnd="16dp"
+				android:layout_marginRight="16dp" />
+
 			<TableLayout
 				android:id="@+id/meta"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_below="@+id/data"
-				android:layout_marginEnd="16dp"
 				android:layout_marginStart="16dp"
 				android:layout_marginLeft="16dp"
-				android:layout_marginRight="16dp"/>
+				android:layout_marginEnd="16dp"
+				android:layout_marginRight="16dp" />
+
 			<TextView
 				android:id="@+id/hex"
 				android:layout_width="match_parent"
@@ -65,19 +71,36 @@
 				android:layout_marginEnd="16dp"
 				android:layout_marginRight="16dp"
 				android:layout_marginBottom="16dp"
-				android:typeface="monospace"
 				android:textSize="12sp"
-				tools:text="54 65 73 74 20 51 52 20  Test QR\n43 6F 64 65              Code"/>
+				android:typeface="monospace"
+				tools:text="54 65 73 74 20 51 52 20  Test QR\n43 6F 64 65              Code" />
+
+			<TextView
+				android:id="@+id/security"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_below="@+id/hex"
+				android:layout_marginStart="16dp"
+				android:layout_marginLeft="16dp"
+				android:layout_marginTop="34dp"
+				android:layout_marginEnd="16dp"
+				android:layout_marginRight="16dp"
+				android:layout_marginBottom="16dp"
+				android:textSize="12sp"
+				android:typeface="monospace"
+				tools:text="Test report" />
 		</RelativeLayout>
 	</de.markusfisch.android.binaryeye.widget.ConfinedScrollView>
+
 	<android.support.design.widget.CoordinatorLayout
 		android:id="@+id/inset_layout"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent">
+
 		<android.support.design.widget.FloatingActionButton
-			style="@style/FAB"
 			android:id="@+id/open"
+			style="@style/FAB"
 			android:contentDescription="@string/open_url"
-			android:src="@drawable/ic_action_open"/>
+			android:src="@drawable/ic_action_open" />
 	</android.support.design.widget.CoordinatorLayout>
 </FrameLayout>

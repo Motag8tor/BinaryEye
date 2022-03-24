@@ -39,6 +39,7 @@ class DecodeFragment : Fragment() {
 	private lateinit var hexView: TextView
 	private lateinit var format: String
 	private lateinit var fab: FloatingActionButton
+	private lateinit var securityView : TextView
 
 	private val parentJob = Job()
 	private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main + parentJob)
@@ -50,6 +51,7 @@ class DecodeFragment : Fragment() {
 	private var isBinary = false
 	private var raw: ByteArray = ByteArray(0)
 	private var id = 0L
+	private var reportContent = ""
 
 	override fun onCreate(state: Bundle?) {
 		super.onCreate(state)
@@ -79,6 +81,7 @@ class DecodeFragment : Fragment() {
 		val inputContent = scan.content
 		isBinary = scan.raw != null
 		raw = scan.raw ?: inputContent.toByteArray()
+		reportContent = scan.report // Store scan result into variable
 		format = scan.format
 
 		contentView = view.findViewById(R.id.content)
@@ -88,7 +91,7 @@ class DecodeFragment : Fragment() {
 			contentView.setText(inputContent)
 			contentView.addTextChangedListener(object : TextWatcher {
 				override fun afterTextChanged(s: Editable?) {
-					updateViewsAndAction(content.toByteArray())
+					updateViewsAndAction(content.toByteArray(), null)
 				}
 
 				override fun beforeTextChanged(
@@ -126,8 +129,10 @@ class DecodeFragment : Fragment() {
 		dataView = view.findViewById(R.id.data)
 		metaView = view.findViewById(R.id.meta)
 		hexView = view.findViewById(R.id.hex)
+		securityView = view.findViewById(R.id.security) // Assign area to place security result
 
-		updateViewsAndAction(raw)
+
+		updateViewsAndAction(raw, reportContent)
 
 		if (!isBinary) {
 			fillDataView(dataView, inputContent)
@@ -148,7 +153,7 @@ class DecodeFragment : Fragment() {
 		parentJob.cancel()
 	}
 
-	private fun updateViewsAndAction(bytes: ByteArray) {
+	private fun updateViewsAndAction(bytes: ByteArray, report: String?) {
 		val prevAction = action
 		if (!prevAction.canExecuteOn(bytes)) {
 			action = ActionRegistry.getAction(bytes)
@@ -160,6 +165,8 @@ class DecodeFragment : Fragment() {
 			bytes.size
 		)
 		hexView.text = if (prefs.showHexDump) hexDump(bytes) else ""
+		// Show the scan results
+		securityView.text = if (prefs.showHexDump) report else ""
 		if (prevAction !== action) {
 			fab.setImageResource(action.iconResId)
 			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {

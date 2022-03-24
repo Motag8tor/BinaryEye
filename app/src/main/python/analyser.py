@@ -9,15 +9,15 @@ def get_analysis(id, headers):
 		try:
 			response = requests.request("GET", url, headers=headers)
 		except requests.ConnectTimeout as timeout:
-			print("Connection timed out.")
 			print(timeout)
+			return "Connection timed out."
 			
 		if response:
 			data = response.json()
 			status = data["data"]["attributes"]["status"]
 			
 			if status == "completed":
-				print(data["data"]["attributes"]["stats"])
+				return data["data"]["attributes"]["stats"]
 				break
 			elif status == "queued":
 				print("Report is not ready yet. Retrying...")
@@ -28,7 +28,7 @@ def get_analysis(id, headers):
 				
 		retries -= 1
 	if retries <= 0:
-		print("Unable to retrieve report. Aborting...")
+		return "Unable to retrieve report. Aborting..."
 	
 # --------------------------------------------------------
 
@@ -45,7 +45,7 @@ def upload_for_scanning(payload, headers):
 	if response:
 		data = response.json()
 		report_id = data["data"]["id"]
-		get_analysis(report_id, headers)
+		return get_analysis(report_id, headers)
 
 # --------------------------------------------------------
 
@@ -53,13 +53,10 @@ def analyser(qrcode, apikey):
 	print("\n" + qrcode + "\n")
 
 	# Print data
-	headers = {
-		"Accept": "application/json",
-		"Content-Type": "application/x-www-form-urlencoded"
-	}
-	headers["x-apikey"] = apikey
+	headers = {"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded",
+			   "x-apikey": apikey}
 
-	message = qrcode + " contains "
+	message = "QRCode contains "
 	data = qrcode.strip()
 	try:
 		int(data)
@@ -73,7 +70,7 @@ def analyser(qrcode, apikey):
 
 	if valid_url:
 		print(message + "URL. Validating URL...")
-		upload_for_scanning(data, headers)
+		return upload_for_scanning(data, headers)
 	elif valid_int:
 		print(message + "numbers: " + data)
 	elif valid_wifi:

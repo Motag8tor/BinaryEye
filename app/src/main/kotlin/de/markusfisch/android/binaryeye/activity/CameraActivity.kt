@@ -49,6 +49,7 @@ import de.markusfisch.android.cameraview.widget.CameraView
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import android.util.Log
 
 class CameraActivity : AppCompatActivity() {
 	private val zxing = Zxing { point ->
@@ -783,20 +784,11 @@ fun showResult(
 	if (prefs.copyImmediately) {
 		activity.copyToClipboard(result.text)
 	}
-
-	val py = Python.getInstance()
-
-	val apiModule = py.getModule("apikey")
-	val apikey = apiModule.callAttr("apikey")
-
-	val module = py.getModule("analyser")
-	val bytes = module.callAttr("analyser", result.text, apikey)
-
-	print(bytes)
 	val scan = result.toScan()
 	if (prefs.useHistory) {
 		scan.id = db.insertScan(scan)
 	}
+	print(prefs.sendScanUrl.isNotEmpty())
 	if (prefs.sendScanUrl.isNotEmpty()) {
 		if (prefs.sendScanType == "4") {
 			activity.openUrl(
@@ -804,6 +796,7 @@ fun showResult(
 			)
 			return
 		}
+		Log.d("Test", "test1")
 		scan.sendAsync(
 			prefs.sendScanUrl,
 			prefs.sendScanType
@@ -871,8 +864,8 @@ private fun isReturnUrl(intent: Intent?): Boolean {
 	val dataString = intent?.dataString
 	return listOf(
 		"binaryeye://scan",
-		"http://markusfisch.de/BinaryEye",
-		"https://markusfisch.de/BinaryEye"
+		"http://google.com",
+		"https://google.com"
 	).firstOrNull {
 		val result = dataString?.startsWith(it) == true
 		result

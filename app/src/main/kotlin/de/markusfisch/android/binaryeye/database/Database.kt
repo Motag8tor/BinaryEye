@@ -108,6 +108,7 @@ class Database {
 			Scan(
 				it.getString(SCANS_CONTENT),
 				it.getBlob(SCANS_RAW),
+				it.getString(SCANS_REPORT),
 				it.getString(SCANS_FORMAT),
 				it.getString(SCANS_ERROR_CORRECTION_LEVEL),
 				it.getString(SCANS_ISSUE_NUMBER),
@@ -232,6 +233,7 @@ class Database {
 		const val SCANS_NAME = "name"
 		const val SCANS_CONTENT = "content"
 		const val SCANS_RAW = "raw"
+		const val SCANS_REPORT = "report" // Database report variable
 		const val SCANS_FORMAT = "format"
 		const val SCANS_ERROR_CORRECTION_LEVEL = "error_correction_level"
 		const val SCANS_ISSUE_NUMBER = "issue_number"
@@ -251,6 +253,7 @@ class Database {
 					$SCANS_NAME TEXT,
 					$SCANS_CONTENT TEXT NOT NULL,
 					$SCANS_RAW BLOB,
+					$SCANS_REPORT TEXT NOT NULL,
 					$SCANS_FORMAT TEXT NOT NULL,
 					$SCANS_ERROR_CORRECTION_LEVEL TEXT,
 					$SCANS_ISSUE_NUMBER INT,

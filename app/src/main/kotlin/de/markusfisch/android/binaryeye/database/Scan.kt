@@ -3,6 +3,9 @@ package de.markusfisch.android.binaryeye.database
 import android.os.Parcel
 import android.os.Parcelable
 import android.text.format.DateFormat
+import android.util.Log
+import com.chaquo.python.PyObject
+import com.chaquo.python.Python
 import com.google.zxing.Result
 import com.google.zxing.ResultMetadataType
 import de.markusfisch.android.binaryeye.app.hasNonPrintableCharacters
@@ -10,6 +13,7 @@ import de.markusfisch.android.binaryeye.app.hasNonPrintableCharacters
 data class Scan(
 	val content: String,
 	val raw: ByteArray?,
+	val report: String, // Define report
 	val format: String,
 	val errorCorrectionLevel: String?,
 	val issueNumber: String?,
@@ -39,6 +43,7 @@ data class Scan(
 				content == other.content &&
 				((raw == null && other.raw == null) ||
 						(raw != null && other.raw != null && raw.contentEquals(other.raw))) &&
+				report == other.report &&
 				format == other.format &&
 				errorCorrectionLevel == other.errorCorrectionLevel &&
 				issueNumber == other.issueNumber &&
@@ -57,6 +62,7 @@ data class Scan(
 		result = 31 * result + dateTime.hashCode()
 		result = 31 * result + content.hashCode()
 		result = 31 * result + (raw?.contentHashCode() ?: 0)
+		result = 31 * result + report.hashCode()
 		result = 31 * result + format.hashCode()
 		result = 31 * result + (errorCorrectionLevel?.hashCode() ?: 0)
 		result = 31 * result + (issueNumber?.hashCode() ?: 0)
@@ -72,6 +78,7 @@ data class Scan(
 	private constructor(parcel: Parcel) : this(
 		content = parcel.readString() ?: "",
 		raw = parcel.readSizedByteArray(),
+		report = parcel.readString() ?: "", // Report
 		format = parcel.readString() ?: "",
 		errorCorrectionLevel = parcel.readString(),
 		issueNumber = parcel.readString(),
@@ -89,6 +96,7 @@ data class Scan(
 		parcel.apply {
 			writeString(content)
 			writeSizedByteArray(raw)
+			writeString(report) // Write report as a string
 			writeString(format)
 			writeString(errorCorrectionLevel)
 			writeString(issueNumber)
@@ -141,6 +149,7 @@ private fun Parcel.readSizedByteArray(): ByteArray? {
 fun Result.toScan(): Scan {
 	val content: String
 	val raw: ByteArray?
+	val report: String?
 	if (text.hasNonPrintableCharacters()) {
 		content = ""
 		raw = getRawData() ?: text.toByteArray()
@@ -148,9 +157,27 @@ fun Result.toScan(): Scan {
 		content = text
 		raw = null
 	}
+
+	// Introduce Python
+	val py = Python.getInstance()
+
+	// Retrieve apikey from separate hidden file
+	val apiModule = py.getModule("apikey")
+	val apikey = apiModule.callAttr("apikey")
+
+	// Retrieve the analyser script
+	val module = py.getModule("analyser")
+	val result: PyObject? = if (raw == null) { // Determine whether the data is in byte or raw form
+		module.callAttr("analyser", content, apikey)
+	} else {
+		module.callAttr("analyser", raw, apikey)
+	}
+	report = result?.toString() ?: "" // If no result then return nothing
+
 	return Scan(
 		content,
 		raw,
+		report,
 		barcodeFormat.toString(),
 		getMetaString(ResultMetadataType.ERROR_CORRECTION_LEVEL),
 		getMetaString(ResultMetadataType.ISSUE_NUMBER),

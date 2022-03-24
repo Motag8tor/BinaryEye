@@ -50,6 +50,7 @@ class UrlDialogFragment : PreferenceDialogFragmentCompat() {
 		Scan(
 			"test",
 			null,
+			"test",
 			"none",
 			null,
 			null,
