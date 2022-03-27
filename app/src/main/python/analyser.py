@@ -1,4 +1,6 @@
-import validators, time, requests, re
+import validators, time, requests, re, apikey, wifi
+
+apikey = apikey.apikey()
 
 def get_analysis(id, headers):
 	retries = 3
@@ -10,7 +12,7 @@ def get_analysis(id, headers):
 			response = requests.request("GET", url, headers=headers)
 		except requests.ConnectTimeout as timeout:
 			print(timeout)
-			return "Connection timed out."
+			return "Unable to retrieve URL analysis report. Please try again."
 			
 		if response:
 			data = response.json()
@@ -18,7 +20,6 @@ def get_analysis(id, headers):
 			
 			if status == "completed":
 				return data["data"]["attributes"]["stats"]
-				break
 			elif status == "queued":
 				print("Report is not ready yet. Retrying...")
 				time.sleep(7)
@@ -28,19 +29,23 @@ def get_analysis(id, headers):
 				
 		retries -= 1
 	if retries <= 0:
-		return "Unable to retrieve report. Aborting..."
+		print("Unable to retrieve report. Aborting...")
+		return "The report took too long to process. Please try again."
 	
 # --------------------------------------------------------
 
-def upload_for_scanning(payload, headers):
-	print("\n-------------------------\n")
+def upload_for_scanning(payload):
+	headers = {"Accept": "application/json", 
+			   "Content-Type": "application/x-www-form-urlencoded",
+			   "x-apikey": apikey}
+
 	url = "https://www.virustotal.com/api/v3/urls"
 
 	try:
 		response = requests.request("POST", url, data="url=" + payload, headers=headers)
 	except requests.ConnectTimeout as timeout:
-		print("Connection timed out.")
 		print(timeout)
+		return "Unable to submit URL for analysis. Please try again."
 		
 	if response:
 		data = response.json()
@@ -49,32 +54,38 @@ def upload_for_scanning(payload, headers):
 
 # --------------------------------------------------------
 
-def analyser(qrcode, apikey):
+def wifi_scanner(data):
+	array = re.findall("(.+?):((?:[^\\;]|\\.)*);", data[5:])
+	print(array)
+
+	wifi_class = wifi.Wifi()
+
+	for i in array:
+		print(i[0])
+		if i[0] == "S":
+			wifi_class.set_SSID(i[1])
+		elif i[0] == "T":
+			wifi_class.set_authentication(i[1])
+		elif i[0] == "P":
+			wifi_class.set_password(i[1])
+		elif i[0] == "H":
+			wifi_class.set_hidden()
+
+	return wifi_class.to_string()
+
+# --------------------------------------------------------
+
+def analyser(qrcode):
 	print("\n" + qrcode + "\n")
 
-	# Print data
-	headers = {"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded",
-			   "x-apikey": apikey}
-
-	message = "QRCode contains "
 	data = qrcode.strip()
-	try:
-		int(data)
-		valid_int = True
-	except ValueError as e:
-		valid_int = False
-
-	valid_wifi = re.search("WIFI:T:.*;S:.*;P:.*;;", data)
 
 	valid_url = validators.url(data)
-
 	if valid_url:
-		print(message + "URL. Validating URL...")
-		return upload_for_scanning(data, headers)
-	elif valid_int:
-		print(message + "numbers: " + data)
-	elif valid_wifi:
-		wifi_name = re.search(";S:.*;P:", data)
-		print(message + "a Wi-Fi connection named: " + wifi_name[0].strip(";S:").strip(";P:"))
-	else:
-		print(message + "message: " + data)
+		print("Validating URL...")
+		return upload_for_scanning(data)
+
+	valid_wifi = re.search("^WIFI:((?:.+?:(?:[^\\;]|\\.)*;)+);?$", data)
+	if valid_wifi:
+		print("Validating Wi-Fi...")
+		return wifi_scanner(data)
