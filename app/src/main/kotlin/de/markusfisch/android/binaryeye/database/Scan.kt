@@ -161,16 +161,12 @@ fun Result.toScan(): Scan {
 	// Introduce Python
 	val py = Python.getInstance()
 
-	// Retrieve apikey from separate hidden file
-	val apiModule = py.getModule("apikey")
-	val apikey = apiModule.callAttr("apikey")
-
 	// Retrieve the analyser script
 	val module = py.getModule("analyser")
 	val result: PyObject? = if (raw == null) { // Determine whether the data is in byte or raw form
-		module.callAttr("analyser", content, apikey)
+		module.callAttr("analyser", content)
 	} else {
-		module.callAttr("analyser", raw, apikey)
+		module.callAttr("analyser", raw)
 	}
 	report = result?.toString() ?: "" // If no result then return nothing
 
