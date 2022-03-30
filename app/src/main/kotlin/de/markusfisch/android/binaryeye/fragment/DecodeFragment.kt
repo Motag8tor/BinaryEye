@@ -2,15 +2,20 @@ package de.markusfisch.android.binaryeye.fragment
 
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.Fragment
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.*
 import android.widget.EditText
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
+import com.chaquo.python.Python
 import de.markusfisch.android.binaryeye.R
 import de.markusfisch.android.binaryeye.actions.ActionRegistry
 import de.markusfisch.android.binaryeye.actions.wifi.WifiAction
@@ -26,10 +31,8 @@ import de.markusfisch.android.binaryeye.io.toSaveResult
 import de.markusfisch.android.binaryeye.io.writeExternalFile
 import de.markusfisch.android.binaryeye.view.setPaddingFromWindowInsets
 import de.markusfisch.android.binaryeye.widget.toast
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+
 
 class DecodeFragment : Fragment() {
 	private lateinit var contentView: EditText
@@ -91,7 +94,7 @@ class DecodeFragment : Fragment() {
 			contentView.setText(inputContent)
 			contentView.addTextChangedListener(object : TextWatcher {
 				override fun afterTextChanged(s: Editable?) {
-					updateViewsAndAction(content.toByteArray(), null)
+					updateViewsAndAction(content.toByteArray(), reportContent)
 				}
 
 				override fun beforeTextChanged(
@@ -131,7 +134,9 @@ class DecodeFragment : Fragment() {
 		hexView = view.findViewById(R.id.hex)
 		securityView = view.findViewById(R.id.security) // Assign area to place security result
 
-
+		GlobalScope.launch(Dispatchers.Main) { // launch the coroutine immediately
+			generateReport()
+		}
 		updateViewsAndAction(raw, reportContent)
 
 		if (!isBinary) {
@@ -146,6 +151,54 @@ class DecodeFragment : Fragment() {
 		(view.findViewById(R.id.scroll_view) as View).setPaddingFromWindowInsets()
 
 		return view
+	}
+
+	private suspend fun generateReport() {
+		var retries = 3
+		var report: String? = null
+		val delay: Long = 7000
+
+		// Introduce Python
+		val py = Python.getInstance()
+
+		// Retrieve the analyser script
+		val module = py.getModule("analyser")
+
+		// If no result then return nothing"
+		val result = module.callAttr("analyser", content).toString()
+		if (result == "url") {
+			report = module.callAttr("get_url_analysis").toString()
+		} else if (result == "wifi") {
+			report = module.callAttr("wifi_scanner").toString()
+		}
+		if (report != null) {
+			while (retries >= 0) {
+				Log.d("Test", "$retries")
+				if (report == "1") {
+					reportContent = "Unable to generate a report. Please scan again or proceed with caution."
+					updateViewsAndAction(raw, reportContent)
+					return
+				} else if (report == "2") {
+					reportContent = "Report is not ready yet. Please wait..."
+					updateViewsAndAction(raw, reportContent)
+				} else if (report == "3") {
+					reportContent = "There was an error with the request. Aborting..."
+					updateViewsAndAction(raw, reportContent)
+					return
+				} else {
+					reportContent = report
+					updateViewsAndAction(raw, reportContent)
+					return
+				}
+				if (retries == 0) {
+					reportContent = "Scan timed out. Please try again later."
+					updateViewsAndAction(raw, reportContent)
+					return
+				}
+				retries--
+				delay(delay)
+			}
+		}
 	}
 
 	override fun onDestroy() {

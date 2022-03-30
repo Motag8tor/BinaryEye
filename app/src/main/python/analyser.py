@@ -1,64 +1,70 @@
-import validators, time, requests, re, apikey, wifi
+import validators, time, requests, re, apikey, wifi, url
 
 apikey = apikey.apikey()
+url_class = None
+wifi_class = None
 
-def get_analysis(id, headers):
-	retries = 3
+headers = {"Accept": "application/json", 
+			   "Content-Type": "application/x-www-form-urlencoded",
+			   "x-apikey": apikey}
+
+def get_url_analysis():
+	global url_class
+	if url_class: # Check if an url has been scanned
+		id = url_class.get_ID()
+	else:
+		return 3 # If not then exit
+
+	VT_url = "https://www.virustotal.com/api/v3/analyses/" + id
 	
-	url = "https://www.virustotal.com/api/v3/analyses/" + id
-	
-	while retries > 0:
-		try:
-			response = requests.request("GET", url, headers=headers)
-		except requests.ConnectTimeout as timeout:
-			print(timeout)
-			return "Unable to retrieve URL analysis report. Please try again."
-			
-		if response:
-			data = response.json()
-			status = data["data"]["attributes"]["status"]
-			
-			if status == "completed":
-				return data["data"]["attributes"]["stats"]
-			elif status == "queued":
-				print("Report is not ready yet. Retrying...")
-				time.sleep(7)
-			else:
-				print("There was an error with the request. Aborting...")
-				break
-				
-		retries -= 1
-	if retries <= 0:
-		print("Unable to retrieve report. Aborting...")
-		return "The report took too long to process. Please try again."
+	try:
+		response = requests.request("GET", VT_url, headers=headers)
+	except requests.ConnectTimeout as timeout:
+		print(timeout)
+		return 1
+
+	if response:
+		data = response.json()
+		status = data["data"]["attributes"]["status"]
+		
+		if status == "completed":
+			print(data["data"]["attributes"]["stats"])
+			url_class.set_harmless = data["data"]["attributes"]["stats"]["harmless"]
+			url_class.set_malicious = data["data"]["attributes"]["stats"]["malicious"]
+			url_class.set_suspicious = data["data"]["attributes"]["stats"]["suspicious"]
+			return url_class.get_malicious()
+			return url_class.get_report()
+		elif status == "queued":
+			return 2
+		else:
+			return 3
 	
 # --------------------------------------------------------
 
 def upload_for_scanning(payload):
-	headers = {"Accept": "application/json", 
-			   "Content-Type": "application/x-www-form-urlencoded",
-			   "x-apikey": apikey}
-
-	url = "https://www.virustotal.com/api/v3/urls"
+	VT_url = "https://www.virustotal.com/api/v3/urls"
 
 	try:
-		response = requests.request("POST", url, data="url=" + payload, headers=headers)
+		response = requests.request("POST", VT_url, data="url=" + payload, headers=headers)
 	except requests.ConnectTimeout as timeout:
 		print(timeout)
 		return "Unable to submit URL for analysis. Please try again."
 		
 	if response:
+		global url_class
 		data = response.json()
 		report_id = data["data"]["id"]
-		return get_analysis(report_id, headers)
+		url_class = url.URL(report_id)
+		return "url"
 
 # --------------------------------------------------------
 
 def wifi_scanner(data):
+	global wifi_class
+	wifi_class = wifi.Wifi()
+
 	array = re.findall("(.+?):((?:[^\\;]|\\.)*);", data[5:])
 	print(array)
-
-	wifi_class = wifi.Wifi()
 
 	for i in array:
 		print(i[0])
@@ -77,15 +83,16 @@ def wifi_scanner(data):
 
 def analyser(qrcode):
 	print("\n" + qrcode + "\n")
-
 	data = qrcode.strip()
 
 	valid_url = validators.url(data)
 	if valid_url:
-		print("Validating URL...")
+		print("URL Found...")
+		url_class = None
 		return upload_for_scanning(data)
 
 	valid_wifi = re.search("^WIFI:((?:.+?:(?:[^\\;]|\\.)*;)+);?$", data)
 	if valid_wifi:
-		print("Validating Wi-Fi...")
-		return wifi_scanner(data)
+		print("Wi-Fi Network Found...")
+		wifi_scanner(data)
+		return "wifi"
