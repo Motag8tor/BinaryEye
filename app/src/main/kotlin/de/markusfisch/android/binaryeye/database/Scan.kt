@@ -157,29 +157,7 @@ fun Result.toScan(): Scan {
 		content = text
 		raw = null
 	}
-
-	/*// Introduce Python
-	val py = Python.getInstance()
-
-	// Retrieve the analyser script
-	val module = py.getModule("analyser")
-	val result: PyObject? = if (raw == null) { // Determine whether the data is in byte or raw form
-		module.callAttr("analyser", content)
-	} else {
-		module.callAttr("analyser", raw)
-	}
-	report = result?.toString() ?: "" // If no result then return nothing
-
-	if (report == "url") {
-		var retries = 3
-
-		while (retries <= 3) {
-			retries--
-		}
-	}*/
-
 	report = ""
-
 	return Scan(
 		content,
 		raw,
