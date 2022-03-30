@@ -158,7 +158,7 @@ fun Result.toScan(): Scan {
 		raw = null
 	}
 
-	// Introduce Python
+	/*// Introduce Python
 	val py = Python.getInstance()
 
 	// Retrieve the analyser script
@@ -169,6 +169,16 @@ fun Result.toScan(): Scan {
 		module.callAttr("analyser", raw)
 	}
 	report = result?.toString() ?: "" // If no result then return nothing
+
+	if (report == "url") {
+		var retries = 3
+
+		while (retries <= 3) {
+			retries--
+		}
+	}*/
+
+	report = ""
 
 	return Scan(
 		content,

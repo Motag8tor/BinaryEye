@@ -27,6 +27,7 @@
 				android:imeOptions="flagNoExtractUi"
 				android:importantForAutofill="no"
 				android:inputType="textMultiLine"
+				android:minHeight="48dp"
 				android:typeface="monospace"
 				tools:ignore="UnusedAttribute" />
 

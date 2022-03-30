@@ -16,13 +16,16 @@ class Wifi:
 
     def set_hidden(self):
         self.hidden = True
+
+    def get_SSID(self):
+        return
     
     def to_string(self):
         ssid_message = f'Analysis of the Wi-Fi network {self.SSID} shows:'
-        pass_warning = ""
-        pass_message = ""
-        auth_warning = ""
-        auth_message = ""
+        pass_warning = None
+        pass_message = None
+        auth_warning = None
+        auth_message = None
 
         if not self.password:
             pass_warning = "*WARNING* "
