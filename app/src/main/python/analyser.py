@@ -12,6 +12,7 @@ def get_url_analysis():
 	global url_class
 	if url_class: # Check if an url has been scanned
 		id = url_class.get_ID()
+		print(id)
 	else:
 		return 3 # If not then exit
 
@@ -29,10 +30,9 @@ def get_url_analysis():
 		
 		if status == "completed":
 			print(data["data"]["attributes"]["stats"])
-			url_class.set_harmless = data["data"]["attributes"]["stats"]["harmless"]
-			url_class.set_malicious = data["data"]["attributes"]["stats"]["malicious"]
-			url_class.set_suspicious = data["data"]["attributes"]["stats"]["suspicious"]
-			return url_class.get_malicious()
+			url_class.set_harmless(data["data"]["attributes"]["stats"]["harmless"])
+			url_class.set_malicious(data["data"]["attributes"]["stats"]["malicious"])
+			url_class.set_suspicious(data["data"]["attributes"]["stats"]["suspicious"])
 			return url_class.get_report()
 		elif status == "queued":
 			return 2
@@ -96,3 +96,5 @@ def analyser(qrcode):
 		print("Wi-Fi Network Found...")
 		wifi_scanner(data)
 		return "wifi"
+	
+	return 0

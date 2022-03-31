@@ -27,7 +27,7 @@ fun addSuffixIfNotGiven(name: String, suffix: String): String {
 // Dialogs doesn't have any root layout, need to be inflated with null root
 @Suppress("InflateParams")
 @MainThread
-suspend fun Activity.askForFileName(suffix: String = ""): String? {
+suspend fun Activity.askForFileName(suffix: String = ".png"): String? {
 	val view = layoutInflater.inflate(R.layout.dialog_save_file, null)
 	val editText = view.findViewById<EditText>(R.id.file_name)
 	return alertDialog<String>(this as Context) { resume ->

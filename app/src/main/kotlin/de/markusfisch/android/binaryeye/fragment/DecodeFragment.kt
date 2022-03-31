@@ -1,5 +1,6 @@
 package de.markusfisch.android.binaryeye.fragment
 
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -155,7 +156,7 @@ class DecodeFragment : Fragment() {
 
 	private suspend fun generateReport() {
 		var retries = 3
-		var report: String? = null
+		var report = ""
 		val delay: Long = 7000
 
 		// Introduce Python
@@ -166,35 +167,58 @@ class DecodeFragment : Fragment() {
 
 		// If no result then return nothing"
 		val result = module.callAttr("analyser", content).toString()
+		Log.d("Test", result)
 		if (result == "url") {
 			report = module.callAttr("get_url_analysis").toString()
 		} else if (result == "wifi") {
 			report = module.callAttr("wifi_scanner").toString()
 		}
-		if (report != null) {
+		if (report != "0") {
 			while (retries >= 0) {
-				Log.d("Test", "$retries")
-				if (report == "1") {
-					reportContent = "Unable to generate a report. Please scan again or proceed with caution."
-					updateViewsAndAction(raw, reportContent)
-					return
-				} else if (report == "2") {
-					reportContent = "Report is not ready yet. Please wait..."
-					updateViewsAndAction(raw, reportContent)
-				} else if (report == "3") {
-					reportContent = "There was an error with the request. Aborting..."
-					updateViewsAndAction(raw, reportContent)
-					return
-				} else {
-					reportContent = report
-					updateViewsAndAction(raw, reportContent)
-					return
+				when (report) {
+					"1" -> {
+						securityView.setTextColor(Color.RED)
+						reportContent = "Unable to generate a report. Please scan again or proceed with caution."
+						updateViewsAndAction(raw, reportContent)
+						return
+					}
+					"2" -> {
+						securityView.setTextColor(Color.YELLOW)
+						reportContent = "Report is not ready yet. Please wait..."
+						updateViewsAndAction(raw, reportContent)
+					}
+					"3" -> {
+						securityView.setTextColor(Color.RED)
+						reportContent = "There was an error with the request. Aborting..."
+						updateViewsAndAction(raw, reportContent)
+						return
+					}
+					else -> {
+						when (report) {
+							"malicious" -> {
+								securityView.setTextColor(Color.RED)
+								reportContent = "This URL appears to be malicious. Avoiding this website is recommended"
+							}
+							"suspicious" -> {
+								securityView.setTextColor(Color.YELLOW)
+								reportContent = "This URL appears to be suspicious. Proceed with caution."
+							}
+							"harmless" -> {
+								securityView.setTextColor(Color.GREEN)
+								reportContent = "This URL appears to be safe."
+							}
+						}
+						updateViewsAndAction(raw, reportContent)
+						return
+					}
 				}
 				if (retries == 0) {
+					securityView.setTextColor(Color.RED)
 					reportContent = "Scan timed out. Please try again later."
 					updateViewsAndAction(raw, reportContent)
 					return
 				}
+				Log.d("Test", "$retries")
 				retries--
 				delay(delay)
 			}
