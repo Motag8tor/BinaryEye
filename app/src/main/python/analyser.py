@@ -41,11 +41,11 @@ def get_url_analysis():
 	
 # --------------------------------------------------------
 
-def upload_for_scanning(payload):
+def upload_for_scanning(address):
 	VT_url = "https://www.virustotal.com/api/v3/urls"
 
 	try:
-		response = requests.request("POST", VT_url, data="url=" + payload, headers=headers)
+		response = requests.request("POST", VT_url, data="url=" + address, headers=headers)
 	except requests.ConnectTimeout as timeout:
 		print(timeout)
 		return "Unable to submit URL for analysis. Please try again."
@@ -54,12 +54,12 @@ def upload_for_scanning(payload):
 		global url_class
 		data = response.json()
 		report_id = data["data"]["id"]
-		url_class = url.URL(report_id)
+		url_class = url.URL(report_id, address)
 		return "url"
 
 # --------------------------------------------------------
 
-def wifi_scanner(data):
+def upload_wifi(data):
 	global wifi_class
 	wifi_class = wifi.Wifi()
 
@@ -67,7 +67,6 @@ def wifi_scanner(data):
 	print(array)
 
 	for i in array:
-		print(i[0])
 		if i[0] == "S":
 			wifi_class.set_SSID(i[1])
 		elif i[0] == "T":
@@ -77,9 +76,20 @@ def wifi_scanner(data):
 		elif i[0] == "H":
 			wifi_class.set_hidden()
 
-	return wifi_class.to_string()
+	return wifi_scanner()
 
 # --------------------------------------------------------
+
+def wifi_scanner():
+	global wifi_class
+
+	return wifi_class.get_report()
+
+# --------------------------------------------------------
+
+def get_wifi_class():
+	global wifi_class
+	return wifi_class
 
 def analyser(qrcode):
 	print("\n" + qrcode + "\n")
@@ -94,7 +104,8 @@ def analyser(qrcode):
 	valid_wifi = re.search("^WIFI:((?:.+?:(?:[^\\;]|\\.)*;)+);?$", data)
 	if valid_wifi:
 		print("Wi-Fi Network Found...")
-		wifi_scanner(data)
+		wifi_class = None
+		upload_wifi(data)
 		return "wifi"
 	
 	return 0

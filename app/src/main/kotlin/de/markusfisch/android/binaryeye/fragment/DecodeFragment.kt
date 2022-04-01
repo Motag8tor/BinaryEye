@@ -16,6 +16,7 @@ import android.widget.EditText
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
+import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import de.markusfisch.android.binaryeye.R
 import de.markusfisch.android.binaryeye.actions.ActionRegistry
@@ -156,7 +157,7 @@ class DecodeFragment : Fragment() {
 
 	private suspend fun generateReport() {
 		var retries = 3
-		var report = ""
+		var report = "0"
 		val delay: Long = 7000
 
 		// Introduce Python
@@ -168,11 +169,14 @@ class DecodeFragment : Fragment() {
 		// If no result then return nothing"
 		val result = module.callAttr("analyser", content).toString()
 		Log.d("Test", result)
+
 		if (result == "url") {
 			report = module.callAttr("get_url_analysis").toString()
 		} else if (result == "wifi") {
 			report = module.callAttr("wifi_scanner").toString()
 		}
+
+		Log.d("Report", report)
 		if (report != "0") {
 			while (retries >= 0) {
 				when (report) {
@@ -194,19 +198,48 @@ class DecodeFragment : Fragment() {
 						return
 					}
 					else -> {
-						when (report) {
-							"malicious" -> {
+						when {
+							report.contains("malicious") -> {
 								securityView.setTextColor(Color.RED)
-								reportContent = "This URL appears to be malicious. Avoiding this website is recommended"
+								reportContent = "This domain appears to be malicious. Avoiding this website is recommended\n"
 							}
-							"suspicious" -> {
+							report.contains("suspicious") -> {
 								securityView.setTextColor(Color.YELLOW)
-								reportContent = "This URL appears to be suspicious. Proceed with caution."
+								reportContent = "This domain appears to be suspicious. Proceed with caution.\n"
 							}
-							"harmless" -> {
+							report.contains("harmless") -> {
 								securityView.setTextColor(Color.GREEN)
-								reportContent = "This URL appears to be safe."
+								reportContent = "This domain appears to be safe.\n"
 							}
+						}
+						when {
+							report.contains("downloadable") -> {
+								securityView.setTextColor(Color.YELLOW)
+								reportContent += "This URL attempts to download a file. Proceed with caution."
+							}
+						}
+						var unsafe = false
+						if (report.contains("hidden")) {
+							reportContent += "This network is hidden.\n"
+						}
+						if (report.contains("nopass")) {
+							reportContent += "This network does not require a password!\n"
+							unsafe = true
+						}
+						if (report.contains("noauth")) {
+							reportContent += "This network is not encrypted!\n"
+							unsafe = true
+						}
+						if (report.contains("authWEP")) {
+							reportContent += "This network uses the outdated WEP encryption!\n"
+							unsafe = true
+						}
+						if (unsafe) {
+							securityView.setTextColor(Color.RED)
+							reportContent += "This network is not safe to join."
+						} else {
+							securityView.setTextColor(Color.GREEN)
+							reportContent += "This network appears to be safe."
 						}
 						updateViewsAndAction(raw, reportContent)
 						return
