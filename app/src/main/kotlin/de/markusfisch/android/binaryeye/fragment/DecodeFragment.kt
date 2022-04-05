@@ -34,6 +34,7 @@ import de.markusfisch.android.binaryeye.io.writeExternalFile
 import de.markusfisch.android.binaryeye.view.setPaddingFromWindowInsets
 import de.markusfisch.android.binaryeye.widget.toast
 import kotlinx.coroutines.*
+import kotlin.io.path.createTempDirectory
 
 
 class DecodeFragment : Fragment() {
@@ -168,21 +169,16 @@ class DecodeFragment : Fragment() {
 
 		// If no result then return nothing"
 		val result = module.callAttr("analyser", content).toString()
-		Log.d("Test", result)
 
-		if (result == "url") {
-			report = module.callAttr("get_url_analysis").toString()
-		} else if (result == "wifi") {
-			report = module.callAttr("wifi_scanner").toString()
-		}
-
-		Log.d("Report", report)
-		if (report != "0") {
-			while (retries >= 0) {
+		while (retries >= 0) {
+			if (result == "url") {
+				report = module.callAttr("get_url_analysis").toString()
+				Log.d("Report", report)
 				when (report) {
 					"1" -> {
 						securityView.setTextColor(Color.RED)
-						reportContent = "Unable to generate a report. Please scan again or proceed with caution."
+						reportContent =
+							"Unable to generate a report. Please scan again or proceed with caution."
 						updateViewsAndAction(raw, reportContent)
 						return
 					}
@@ -198,63 +194,84 @@ class DecodeFragment : Fragment() {
 						return
 					}
 					else -> {
-						when {
-							report.contains("malicious") -> {
+						val conclusion = module.callAttr("get_url_conclusion").toString()
+						when (conclusion) {
+							"malicious" -> {
 								securityView.setTextColor(Color.RED)
-								reportContent = "This domain appears to be malicious. Avoiding this website is recommended\n"
+								reportContent =
+									"This domain appears to be malicious. Avoiding this website is recommended.\n"
 							}
-							report.contains("suspicious") -> {
+							"suspicious" -> {
 								securityView.setTextColor(Color.YELLOW)
-								reportContent = "This domain appears to be suspicious. Proceed with caution.\n"
+								reportContent =
+									"This domain appears to be suspicious. Proceed with caution.\n"
 							}
-							report.contains("harmless") -> {
+							"harmless" -> {
 								securityView.setTextColor(Color.GREEN)
 								reportContent = "This domain appears to be safe.\n"
 							}
 						}
-						when {
-							report.contains("downloadable") -> {
+
+						val downloadable = module.callAttr("get_url_downloadable").toString()
+						when (downloadable) {
+							"True" -> {
 								securityView.setTextColor(Color.YELLOW)
-								reportContent += "This URL attempts to download a file. Proceed with caution."
+								reportContent += "This URL attempts to download a file. Proceed with caution.\n"
 							}
 						}
-						var unsafe = false
-						if (report.contains("hidden")) {
-							reportContent += "This network is hidden.\n"
+
+						val creationDate = module.callAttr("get_url_creation_date").toString()
+						if (creationDate < "31") {
+							securityView.setTextColor(Color.YELLOW)
+							reportContent += "This URL was registered in the last month. Proceed with caution.\n"
 						}
-						if (report.contains("nopass")) {
-							reportContent += "This network does not require a password!\n"
-							unsafe = true
-						}
-						if (report.contains("noauth")) {
-							reportContent += "This network is not encrypted!\n"
-							unsafe = true
-						}
-						if (report.contains("authWEP")) {
-							reportContent += "This network uses the outdated WEP encryption!\n"
-							unsafe = true
-						}
-						if (unsafe) {
-							securityView.setTextColor(Color.RED)
-							reportContent += "This network is not safe to join."
+						else if (creationDate == "0") {
+
 						} else {
-							securityView.setTextColor(Color.GREEN)
-							reportContent += "This network appears to be safe."
+							reportContent += "This URL was registered over a month ago."
 						}
 						updateViewsAndAction(raw, reportContent)
 						return
 					}
 				}
-				if (retries == 0) {
-					securityView.setTextColor(Color.RED)
-					reportContent = "Scan timed out. Please try again later."
-					updateViewsAndAction(raw, reportContent)
-					return
+			} else if (result == "wifi") {
+				report = module.callAttr("wifi_scanner").toString()
+				Log.d("Report", report)
+
+				var unsafe = false
+				if (report.contains("hidden")) {
+					reportContent += "This network is hidden.\n"
 				}
-				Log.d("Test", "$retries")
-				retries--
-				delay(delay)
+				if (report.contains("nopass")) {
+					reportContent += "This network does not require a password!\n"
+					unsafe = true
+				}
+				if (report.contains("noauth")) {
+					reportContent += "This network is not encrypted!\n"
+					unsafe = true
+				}
+				if (report.contains("authWEP")) {
+					reportContent += "This network uses the outdated WEP encryption!\n"
+					unsafe = true
+				}
+				if (unsafe) {
+					securityView.setTextColor(Color.RED)
+					reportContent += "This network is not safe to join."
+				} else {
+					securityView.setTextColor(Color.GREEN)
+					reportContent += "This network appears to be safe."
+				}
 			}
+			updateViewsAndAction(raw, reportContent)
+			if (retries == 0) {
+				securityView.setTextColor(Color.RED)
+				reportContent = "Scan timed out. Please try again later."
+				updateViewsAndAction(raw, reportContent)
+				return
+			}
+			Log.d("Test", "$retries")
+			retries--
+			delay(delay)
 		}
 	}
 

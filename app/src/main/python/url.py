@@ -1,4 +1,4 @@
-import requests
+import requests, tldextract, whois, datetime
 
 class URL:
     def __init__(self, id, address):
@@ -7,7 +7,12 @@ class URL:
         self.harmless = 0
         self.malicious = 0
         self.suspicious = 0
-        self.result = []
+
+        self.domain = None
+        self.headers = None
+        self.creation_date = None
+        self.conclusion = None
+        self.downloadable = False
 
     def set_harmless(self, value):
         self.harmless = int(value)
@@ -18,30 +23,82 @@ class URL:
     def set_suspicious(self, value):
         self.suspicious = int(value)
 
+# --------------------------------------------------------
+
     def get_ID(self):
         return self.ID
 
     def get_malicious(self):
         return self.malicious
 
-    def get_report(self):
-        downloadable = False
-        if self.address.startswith("ftp://"):
-            downloadable = True
-        else:
-            headers = requests.head(self.address).headers
-            print(headers.get("Content-Type"))
-            print(headers.get("Content-Disposition"))
-            downloadable = "application/" in headers.get("Content-Type") or "attachment" in headers.get("Content-Disposition")
+    def get_conclusion(self):
+        return self.conclusion
 
-        if downloadable:
-            self.result.append("downloadable")
-        print(downloadable)
+    def get_downloadable(self):
+        return self.downloadable
+
+    def get_creation_date(self):
+        return self.creation_date
+
+# --------------------------------------------------------
+
+    def get_report(self):
+        if self.address.startswith("ftp://"):
+            self.downloadable = True
+            print("FTP URL")
+        elif self.address.startswith("sftp://"):
+            self.downloadable = True
+            print("SFTP URL")
+        else:
+            try:
+                self.headers = requests.head(self.address).headers
+            except:
+                print("Unable to retrieve header.")
+            
+            if self.headers:
+                if self.headers.get("Content-Disposition"):
+                    print(self.headers.get("Content-Disposition"))
+                    self.downloadable = "attachment" in self.headers.get("Content-Disposition")
+                elif self.headers.get("Content-Type"):
+                    print(self.headers.get("Content-Type"))
+                    self.downloadable = "application/" in self.headers.get("Content-Type")
+        print(self.downloadable)
+
+        try:
+            tld = tldextract.extract(self.address)
+            self.domain = tld.registered_domain
+        except:
+            print("Unable to retrieve the top level domain.")
+        print(self.domain)
+
+        if self.domain:
+            registered = None
+            distance = None
+            try:
+                registered = whois.whois(self.domain)
+            except:
+                print("Unable to retrieve registration date")
+
+            try:
+                distance = datetime.datetime.now() - registered.creation_date[0]
+            except:
+                print()
+            
+            try:
+                distance = datetime.datetime.now() - registered.creation_date
+            except:
+                print()
+
+            if distance:
+                self.creation_date = distance.days
+                print(self.creation_date)
+            else:
+                self.creation_date = "0"
 
         if self.malicious >= 1:
-            self.result.append("malicious")
+            self.conclusion = "malicious"
         elif self.suspicious >= 1:
-            self.result.append("suspicious")
+            self.conclusion = "suspicious"
         else:
-            self.result.append("harmless")
-        return self.result
+            self.conclusion = "harmless"
+        print(self.conclusion)

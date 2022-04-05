@@ -7,6 +7,22 @@ wifi_class = None
 headers = {"Accept": "application/json", 
 			   "Content-Type": "application/x-www-form-urlencoded",
 			   "x-apikey": apikey}
+			
+# --------------------------------------------------------
+
+def get_url_conclusion():
+	global url_class
+	return url_class.get_conclusion()
+
+def get_url_downloadable():
+	global url_class
+	return url_class.get_downloadable()
+
+def get_url_creation_date():
+	global url_class
+	return url_class.get_creation_date()
+
+# --------------------------------------------------------
 
 def get_url_analysis():
 	global url_class
@@ -33,7 +49,8 @@ def get_url_analysis():
 			url_class.set_harmless(data["data"]["attributes"]["stats"]["harmless"])
 			url_class.set_malicious(data["data"]["attributes"]["stats"]["malicious"])
 			url_class.set_suspicious(data["data"]["attributes"]["stats"]["suspicious"])
-			return url_class.get_report()
+			url_class.get_report() # Generate report
+			return "success" # Return successful message
 		elif status == "queued":
 			return 2
 		else:
@@ -86,10 +103,6 @@ def wifi_scanner():
 	return wifi_class.get_report()
 
 # --------------------------------------------------------
-
-def get_wifi_class():
-	global wifi_class
-	return wifi_class
 
 def analyser(qrcode):
 	print("\n" + qrcode + "\n")
