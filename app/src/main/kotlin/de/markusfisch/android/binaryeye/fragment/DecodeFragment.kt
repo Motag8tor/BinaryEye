@@ -157,122 +157,182 @@ class DecodeFragment : Fragment() {
 	}
 
 	private suspend fun generateReport() {
-		var retries = 3
-		var report = "0"
-		val delay: Long = 7000
-
 		// Introduce Python
 		val py = Python.getInstance()
 
 		// Retrieve the analyser script
 		val module = py.getModule("analyser")
 
-		// If no result then return nothing"
+		// If no result then return 0"
 		val result = module.callAttr("analyser", content).toString()
+		Log.d("Result", result)
 
-		while (retries >= 0) {
-			if (result == "url") {
-				report = module.callAttr("get_url_analysis").toString()
-				Log.d("Report", report)
-				when (report) {
-					"1" -> {
-						securityView.setTextColor(Color.RED)
-						reportContent =
-							"Unable to generate a report. Please scan again or proceed with caution."
-						updateViewsAndAction(raw, reportContent)
-						return
-					}
-					"2" -> {
-						securityView.setTextColor(Color.YELLOW)
-						reportContent = "Report is not ready yet. Please wait..."
-						updateViewsAndAction(raw, reportContent)
-					}
-					"3" -> {
-						securityView.setTextColor(Color.RED)
-						reportContent = "There was an error with the request. Aborting..."
-						updateViewsAndAction(raw, reportContent)
-						return
-					}
-					else -> {
-						val conclusion = module.callAttr("get_url_conclusion").toString()
-						when (conclusion) {
-							"malicious" -> {
-								securityView.setTextColor(Color.RED)
-								reportContent =
-									"This domain appears to be malicious. Avoiding this website is recommended.\n"
-							}
-							"suspicious" -> {
-								securityView.setTextColor(Color.YELLOW)
-								reportContent =
-									"This domain appears to be suspicious. Proceed with caution.\n"
-							}
-							"harmless" -> {
-								securityView.setTextColor(Color.GREEN)
-								reportContent = "This domain appears to be safe.\n"
-							}
-						}
+		if (result == "url" || result == "file") {
+			var retries = 3
+			val delay: Long = 7000
 
-						val downloadable = module.callAttr("get_url_downloadable").toString()
-						when (downloadable) {
-							"True" -> {
-								securityView.setTextColor(Color.YELLOW)
-								reportContent += "This URL attempts to download a file. Proceed with caution.\n"
-							}
-						}
-
-						val creationDate = module.callAttr("get_url_creation_date").toString()
-						if (creationDate < "31") {
-							securityView.setTextColor(Color.YELLOW)
-							reportContent += "This URL was registered in the last month. Proceed with caution.\n"
-						}
-						else if (creationDate == "0") {
-
-						} else {
-							reportContent += "This URL was registered over a month ago."
-						}
-						updateViewsAndAction(raw, reportContent)
-						return
-					}
+			while (retries >= 0) { // More than to account for weird scenarios
+				var value = 0
+				if (result == "url") {
+					value = checkURL(module)
+				} else if (result == "file") {
+					value = checkFile(module)
 				}
-			} else if (result == "wifi") {
-				report = module.callAttr("wifi_scanner").toString()
-				Log.d("Report", report)
 
-				var unsafe = false
-				if (report.contains("hidden")) {
-					reportContent += "This network is hidden.\n"
+				if (value !=0) {
+					when (value) {
+						1 -> securityView.setTextColor(Color.GREEN)
+						2 -> securityView.setTextColor(Color.YELLOW)
+						3 -> securityView.setTextColor(Color.RED)
+					}
+					Log.d("Report", "I JUST CHANGED THE COLOUR TO $value")
+					break
 				}
-				if (report.contains("nopass")) {
+
+				if (retries == 0) {
+					securityView.setTextColor(Color.RED)
+					reportContent = "Scan timed out. Please try again later."
+					updateViewsAndAction(raw, reportContent)
+				} else {
+					Log.d("Test", "$retries")
+					retries--
+					delay(delay)
+				}
+			}
+		} else if (result == "wifi") { // Do stuff for Wi-Fi's
+			val report = module.callAttr("wifi_scanner").toString()
+			Log.d("Report", report)
+
+			var unsafe = false
+			when {
+				report.contains("hidden") -> reportContent += "This network is hidden.\n"
+				report.contains("nopass") -> {
 					reportContent += "This network does not require a password!\n"
 					unsafe = true
 				}
-				if (report.contains("noauth")) {
+				report.contains("noauth") -> {
 					reportContent += "This network is not encrypted!\n"
 					unsafe = true
 				}
-				if (report.contains("authWEP")) {
+				report.contains("authWEP") -> {
 					reportContent += "This network uses the outdated WEP encryption!\n"
 					unsafe = true
 				}
-				if (unsafe) {
-					securityView.setTextColor(Color.RED)
-					reportContent += "This network is not safe to join."
-				} else {
-					securityView.setTextColor(Color.GREEN)
-					reportContent += "This network appears to be safe."
-				}
+			}
+			if (unsafe) {
+				securityView.setTextColor(Color.RED)
+				reportContent += "This network is not safe to join."
+			} else {
+				securityView.setTextColor(Color.GREEN)
+				reportContent += "This network appears to be safe."
 			}
 			updateViewsAndAction(raw, reportContent)
-			if (retries == 0) {
-				securityView.setTextColor(Color.RED)
-				reportContent = "Scan timed out. Please try again later."
-				updateViewsAndAction(raw, reportContent)
-				return
-			}
-			Log.d("Test", "$retries")
-			retries--
-			delay(delay)
 		}
+	}
+
+	private fun checkURL(module: PyObject): Int {
+		var value = 0
+		val (Green, Yellow, Red) = listOf(1, 2, 3)
+		val report = module.callAttr("get_url_analysis").toString()
+		Log.d("Report Value", report)
+		when (report) {
+			"1" -> {
+				value = if (value < Red) Red else value
+				reportContent =
+					"Unable to generate a report. Please scan again or proceed with caution."
+			}
+			"2" -> {
+				securityView.setTextColor(Color.YELLOW)
+				reportContent = "Report is not ready yet. Please wait..."
+			}
+			"3" -> {
+				value = if (value < Green) Green else value
+				reportContent = "There was an error with the request. Aborting..."
+			}
+			else -> {
+				val conclusion = module.callAttr("get_url_conclusion").toString()
+				when (conclusion) {
+					"malicious" -> {
+						value = if (value < Red) Red else value
+						reportContent =
+							"This domain appears to be malicious. Avoiding this website is recommended.\n"
+					}
+					"suspicious" -> {
+						value = if (value < Yellow) Yellow else value
+						reportContent =
+							"This domain appears to be suspicious. Proceed with caution.\n"
+					}
+					"harmless" -> {
+						value = if (value < Green) Green else value
+						reportContent = "This domain appears to be safe.\n"
+					}
+				}
+
+				val creationDate = module.callAttr("get_url_creation_date").toString()
+				if (creationDate == "0") {
+					Log.d("Creation Date", "Unable to retrieve creation date")
+				} else if (creationDate < "31") {
+					value = if (value < Yellow) Yellow else value
+					reportContent += "This URL was registered in the last month. Proceed with caution.\n"
+				} else {
+					value = if (value < Green) Green else value
+					reportContent += "This URL was registered over a month ago.\n"
+				}
+
+				val downloadable = module.callAttr("get_url_downloadable").toString()
+				when (downloadable) {
+					"True" -> {
+						value = if (value < Yellow) Yellow else value
+						reportContent += "This URL attempts to download a file. Proceed with caution."
+					}
+				}
+			}
+		}
+		updateViewsAndAction(raw, reportContent)
+		return value
+	}
+
+	private suspend fun checkFile(module: PyObject): Int {
+		var value = 0
+		val (Green, Yellow, Red) = listOf(1, 2, 3)
+		delay(2000)
+		val report = module.callAttr("get_file_analysis").toString()
+		Log.d("Report", report)
+		when (report) {
+			"1" -> {
+				value = if (value < Red) Red else value
+				reportContent =
+					"Unable to generate a report. Please scan again or proceed with caution."
+			}
+			"2" -> {
+				securityView.setTextColor(Color.YELLOW)
+				reportContent = "Report is not ready yet. Please wait..."
+			}
+			"3" -> {
+				value = if (value < Red) Red else value
+				reportContent = "There was an error with the request. Aborting..."
+			}
+			else -> {
+				when (report) {
+					"malicious" -> {
+						value = if (value < Red) Red else value
+						reportContent =
+							"This QRCode appears to be malicious.\n"
+					}
+					"suspicious" -> {
+						value = if (value < Yellow) Yellow else value
+						reportContent =
+							"This QRCode appears to be suspicious.\n"
+					}
+					"harmless" -> {
+						value = if (value < Green) Green else value
+						reportContent = "This QRCode appears to be safe.\n"
+					}
+				}
+			}
+		}
+		updateViewsAndAction(raw, reportContent)
+		return value
 	}
 
 	override fun onDestroy() {

@@ -87,13 +87,10 @@ android {
 		// https://github.com/zxing/zxing/issues/1170
 		coreLibraryDesugaringEnabled true
 	}
+    lint {
+        disable 'GradleCompatible'
+    }
 
-	lintOptions {
-		// Because at the time of writing, even the latest version
-		// of RenderScript is raising this error no matter if
-		// renderscriptTargetApi matches targetSdkVersion.
-		disable 'GradleCompatible'
-	}
 }
 
 dependencies {

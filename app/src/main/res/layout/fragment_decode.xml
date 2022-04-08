@@ -73,6 +73,7 @@
 				android:layout_marginEnd="16dp"
 				android:layout_marginRight="16dp"
 				android:layout_marginBottom="16dp"
+				android:textColor="@android:color/holo_green_light"
 				android:textSize="16sp"
 				android:typeface="monospace"
 				tools:text="Test report" />

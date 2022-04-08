@@ -28,9 +28,6 @@ class URL:
     def get_ID(self):
         return self.ID
 
-    def get_malicious(self):
-        return self.malicious
-
     def get_conclusion(self):
         return self.conclusion
 
@@ -82,12 +79,13 @@ class URL:
             try:
                 distance = datetime.datetime.now() - registered.creation_date[0]
             except:
-                print()
+                pass
+            else:
+                try:
+                    distance = datetime.datetime.now() - registered.creation_date
+                except:
+                    pass
             
-            try:
-                distance = datetime.datetime.now() - registered.creation_date
-            except:
-                print()
 
             if distance:
                 self.creation_date = distance.days
