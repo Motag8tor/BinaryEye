@@ -169,7 +169,7 @@ class DecodeFragment : Fragment() {
 
 		if (result == "url" || result == "file") {
 			var retries = 3
-			val delay: Long = 7000
+			val delay: Long = 10000
 
 			while (retries >= 0) { // More than to account for weird scenarios
 				var value = 0
@@ -200,8 +200,8 @@ class DecodeFragment : Fragment() {
 				}
 			}
 		} else if (result == "wifi") { // Do stuff for Wi-Fi's
-			val report = module.callAttr("wifi_scanner").toString()
-			Log.d("Report", report)
+			val report = module.callAttr("get_wifi_analysis").toString()
+			Log.d("Wi-Fi Result", report)
 
 			var unsafe = false
 			when {
@@ -234,7 +234,7 @@ class DecodeFragment : Fragment() {
 		var value = 0
 		val (Green, Yellow, Red) = listOf(1, 2, 3)
 		val report = module.callAttr("get_url_analysis").toString()
-		Log.d("Report Value", report)
+		Log.d("URL Report Value", report)
 		when (report) {
 			"1" -> {
 				value = if (value < Red) Red else value
@@ -268,10 +268,10 @@ class DecodeFragment : Fragment() {
 					}
 				}
 
-				val creationDate = module.callAttr("get_url_creation_date").toString()
-				if (creationDate == "0") {
+				val creationDate = module.callAttr("get_url_creation_date").toInt()
+				if (creationDate == 0) {
 					Log.d("Creation Date", "Unable to retrieve creation date")
-				} else if (creationDate < "31") {
+				} else if (creationDate < 31) {
 					value = if (value < Yellow) Yellow else value
 					reportContent += "This URL was registered in the last month. Proceed with caution.\n"
 				} else {
@@ -297,7 +297,7 @@ class DecodeFragment : Fragment() {
 		val (Green, Yellow, Red) = listOf(1, 2, 3)
 		delay(2000)
 		val report = module.callAttr("get_file_analysis").toString()
-		Log.d("Report", report)
+		Log.d("File Report Value", report)
 		when (report) {
 			"1" -> {
 				value = if (value < Red) Red else value

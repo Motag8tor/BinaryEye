@@ -39,7 +39,7 @@ class URL:
 
 # --------------------------------------------------------
 
-    def get_report(self):
+    def generate_report(self):
         if self.address.startswith("ftp://"):
             self.downloadable = True
             print("FTP URL")

@@ -1,5 +1,5 @@
-import validators, time, requests, re, apikey # Import external
-import wifi, url, file # Import local
+import validators, requests, re # Import external
+import apikey, wifi, url, file # Import local
 from io import BytesIO
 
 apikey = apikey.apikey()
@@ -52,7 +52,7 @@ def get_url_analysis():
 			url_class.set_harmless(data["data"]["attributes"]["stats"]["harmless"])
 			url_class.set_malicious(data["data"]["attributes"]["stats"]["malicious"])
 			url_class.set_suspicious(data["data"]["attributes"]["stats"]["suspicious"])
-			url_class.get_report() # Generate report
+			url_class.generate_report() # Generate report
 			return "success" # Return successful message
 		elif status == "queued":
 			return 2
@@ -61,7 +61,7 @@ def get_url_analysis():
 	
 # --------------------------------------------------------
 
-def upload_for_scanning(address):
+def upload_url_for_scanning(address):
 	VT_url = "https://www.virustotal.com/api/v3/urls"
 
 	try:
@@ -79,14 +79,13 @@ def upload_for_scanning(address):
 
 # --------------------------------------------------------
 
-def wifi_scanner():
+def get_wifi_analysis():
 	global wifi_class
-
 	return wifi_class.get_report()
 
 # --------------------------------------------------------
 
-def upload_wifi(data):
+def wifi_scanner(data):
 	global wifi_class
 	wifi_class = wifi.Wifi()
 
@@ -103,7 +102,7 @@ def upload_wifi(data):
 		elif i[0] == "H":
 			wifi_class.set_hidden()
 
-	return wifi_scanner()
+	return get_wifi_analysis()
 
 # --------------------------------------------------------
 
@@ -179,14 +178,14 @@ def analyser(qrcode):
 		global url_class
 		print("URL Found...")
 		url_class = None
-		return upload_for_scanning(data)
+		return upload_url_for_scanning(data)
 
 	valid_wifi = re.search("^WIFI:((?:.+?:(?:[^\\;]|\\.)*;)+);?$", data)
 	if valid_wifi:
 		global wifi_class
 		print("Wi-Fi Network Found...")
 		wifi_class = None
-		upload_wifi(data)
+		wifi_scanner(data)
 		return "wifi"
 
 	if not valid_url or not valid_wifi:
@@ -196,6 +195,3 @@ def analyser(qrcode):
 		return upload_file_for_scanning(data)
 	
 	return 0
-
-if __name__ == '__main__':
-	upload_file_for_scanning("beans")
